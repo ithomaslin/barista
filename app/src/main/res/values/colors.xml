@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="primary">#009688</color>
+    <color name="primary_dark">#00796B</color>
+    <color name="primary_light">#B2DFDB</color>
+    <color name="accent">#795548</color>
+    <color name="primary_text">#212121</color>
+    <color name="secondary_text">#757575</color>
+    <color name="icons">#FFFFFF</color>
+    <color name="divider">#BDBDBD</color>
+
+    <color name="accountBackground">#61727f</color>
+    <color name="accountLabel">#7d97ad</color>
+    <color name="accountText">#61727f</color>
+    <color name="accountLogoutLabel">#fc6240</color>
+
+    <color name="background">#d5f0ec</color>
+    <color name="text">#61727f</color>
+    <color name="buttonBackground">#09d4b6</color>
+    <color name="buttonPressedBackground">#00c5a5</color>
+    <color name="buttonText">#ffffff</color>
+    <color name="inputBackground">#ffffff</color>
+    <color name="inputText">#7d97ad</color>
+    <color name="statusBar">#00c5a5</color>
+    <color name="icon">#09d4b6</color>
+
+    <color name="green_dot_big">#009688</color>
+    <color name="green_dot_small">#009688</color>
+    <color name="temperature_background">#009688</color>
+    <color name="temperature_text">#FFFFFF</color>
+</resources>

@@ -1,0 +1,38 @@
+<resources>
+    <string name="app_name">Goobucks</string>
+    <string name="facebook_app_id">440787206356691</string>
+    <string name="fb_login_protocol_scheme">fb440787206356691</string>
+    <string name="login_label">Email or Phone Number</string>
+    <string name="accountkit_button_label">Continue</string>
+    <string name="account">Account</string>
+    <string name="id_label">Account ID</string>
+    <string name="phone_label">Phone Number</string>
+    <string name="location_label">Location</string>
+    <string name="email_label">Email</string>
+    <string name="name_label">Name</string>
+    <string name="logout_label">Log Out</string>
+    <string name="search_label">Where are you headed?</string>
+    <string name="visited_today">visited today</string>
+    <string name="friends">Find Friends</string>
+    <string name="follow">Follow</string>
+    <string name="unfollow">Unfollow</string>
+    <string name="no_friends">No friends found</string>
+    <string name="location_permission_message">Goobucks would like access to your user location.</string>
+    <string name="permission_message">Goobucks requires permission to access your Facebook friend list</string>
+    <string name="custom_login_dialogue">Logging you in&#8230;</string>
+    <string name="log_out">Sign out</string>
+    <string name="become_barista">Register as barista?</string>
+    <string name="become_barista_confirmation">Are you sure that you want to become our registered barista?</string>
+    <string name="confirm_positive">Of course!</string>
+    <string name="confirm_negative">No&#8230;</string>
+    <string name="title_activity_home">HomeActivity</string>
+
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="donate">Donate</string>
+
+    <string name="history">History</string>
+    <string name="preference_file_key">com.richify.goobucks.preference_key.440787206356691</string>
+</resources>
