@@ -35,4 +35,10 @@
 
     <string name="history">History</string>
     <string name="preference_file_key">com.richify.goobucks.preference_key.440787206356691</string>
+
+    <string name="text1">一個變態</string>
+    <string name="text2">優質咖啡師</string>
+    <string name="text3">Party King</string>
+    <string name="text4">正妹咖啡師</string>
+    <string name="text5">天才型咖啡師</string>
 </resources>

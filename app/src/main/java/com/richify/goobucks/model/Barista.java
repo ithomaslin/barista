@@ -1,5 +1,6 @@
 package com.richify.goobucks.model;
 
+import android.net.Uri;
 import android.support.annotation.Nullable;
 
 import java.security.PublicKey;
@@ -12,7 +13,8 @@ import java.util.ArrayList;
 
 public class Barista {
 
-    private String displayName, email, uid, profilePictureUri;
+    private String displayName, email, uid;
+    private Uri profilePictureUri;
     private Double rating;
     private ArrayList<String> menu;
     private Boolean isVerified;
@@ -23,7 +25,7 @@ public class Barista {
         this.displayName = displayName;
         this.email = email;
         this.uid = uid;
-        this.profilePictureUri = profilePictureUri;
+        this.profilePictureUri = Uri.parse(profilePictureUri);
         this.isVerified = isVerified;
         this.rating = rating;
         this.menu = menu;
@@ -49,7 +51,7 @@ public class Barista {
         return menu;
     }
 
-    public String getProfilePictureUri() {
+    public Uri getProfilePictureUri() {
         return profilePictureUri;
     }
 

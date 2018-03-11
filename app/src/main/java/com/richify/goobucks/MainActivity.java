@@ -1,326 +1,266 @@
 package com.richify.goobucks;
 
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.app.ActivityOptions;
 import android.content.Intent;
-import android.graphics.drawable.Drawable;
+import android.graphics.Bitmap;
+import android.graphics.Typeface;
 import android.net.Uri;
-import android.os.PersistableBundle;
-import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
-import android.support.v4.content.ContextCompat;
+import android.os.Build;
+import android.support.annotation.DrawableRes;
+import android.support.annotation.StyleRes;
+import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
+import android.support.v7.widget.CardView;
+import android.support.v7.widget.RecyclerView;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
+import android.widget.ImageSwitcher;
 import android.widget.ImageView;
-import android.widget.Toast;
+import android.widget.TextSwitcher;
+import android.widget.TextView;
+import android.widget.ViewSwitcher;
 
-import com.afollestad.materialdialogs.DialogAction;
-import com.afollestad.materialdialogs.MaterialDialog;
-import com.afollestad.materialdialogs.Theme;
-import com.facebook.AccessToken;
-import com.facebook.CallbackManager;
-import com.facebook.FacebookCallback;
-import com.facebook.FacebookException;
-import com.facebook.GraphRequest;
-import com.facebook.GraphResponse;
-import com.facebook.HttpMethod;
-import com.facebook.Profile;
-import com.facebook.ProfileTracker;
-import com.facebook.login.LoginManager;
-import com.facebook.login.LoginResult;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.mikepenz.fontawesome_typeface_library.FontAwesome;
-import com.mikepenz.materialdrawer.AccountHeader;
-import com.mikepenz.materialdrawer.AccountHeaderBuilder;
-import com.mikepenz.materialdrawer.Drawer;
-import com.mikepenz.materialdrawer.DrawerBuilder;
-import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
-import com.mikepenz.materialdrawer.model.ProfileDrawerItem;
-import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
-import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
-import com.mikepenz.materialdrawer.model.interfaces.IProfile;
-import com.mikepenz.materialdrawer.util.AbstractDrawerImageLoader;
-import com.mikepenz.materialdrawer.util.DrawerImageLoader;
-import com.squareup.picasso.Picasso;
+import com.ramotion.cardslider.CardSliderLayoutManager;
+import com.ramotion.cardslider.CardSnapHelper;
+import com.richify.goobucks.cards.SliderAdapter;
+import com.richify.goobucks.util.DecodeBitmapTask;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.Arrays;
-import java.util.Set;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TAG = "MainActivity";
-    private DatabaseReference mDatabaseRef;
-    private AccountHeader headerResult;
-    private Drawer result;
-    private IProfile mProfile;
+    private final int[] pics = {R.drawable.r1, R.drawable.r2, R.drawable.r3, R.drawable.r4, R.drawable.r5};
+    private Uri[] uris = {
+            Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D"),
+            Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D"),
+            Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D"),
+            Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D"),
+            Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D")
+    };
+    private final int[] descriptions = {R.string.text1, R.string.text2, R.string.text3, R.string.text4, R.string.text5};
+    private final String[] barista = {"Felix Lin", "Thomas Lin", "David Dai", "Ashley Hsieh", "Steven Tzou"};
+    private final String[] places = {"Taipei", "Taipei", "Taipei", "Taipei", "Taipei"};
+    private final String[] ratings = {"4.1", "4.7", "4.3", "4.2", "4.5"};
+    private final String[] times = {"Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00"};
 
-    ProfileTracker profileTracker;
-    CallbackManager callbackManager;
+    private final SliderAdapter sliderAdapter = new SliderAdapter(pics, uris, 5, new OnCardClickListener());
+
+    private CardSliderLayoutManager layoutManger;
+    private RecyclerView recyclerView;
+    private TextSwitcher ratingsSwitcher;
+    private TextSwitcher placeSwitcher;
+    private TextSwitcher clockSwitcher;
+    private TextSwitcher descriptionsSwitcher;
+
+    private TextView barista1TextView;
+    private TextView barista2TextView;
+    private int baristaOffset1;
+    private int baristaOffset2;
+    private long baristaAnimDuration;
+    private int currentPosition;
+    private DatabaseReference mDatabaseRef;
+    private final String BARISTA = "barista";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
-        DrawerImageLoader.init(new AbstractDrawerImageLoader() {
-            @Override
-            public void set(ImageView imageView, Uri uri, Drawable placeholder) {
-                Picasso.with(imageView.getContext()).load(uri).placeholder(placeholder).into(imageView);
-            }
-
-            @Override
-            public void cancel(ImageView imageView) {
-                Picasso.with(imageView.getContext()).cancelRequest(imageView);
-            }
-        });
-
+        // Initializing Firebase database reference
         mDatabaseRef = FirebaseDatabase.getInstance().getReference();
-        profileTracker = new ProfileTracker() {
-            @Override
-            protected void onCurrentProfileChanged(Profile oldProfile, Profile currentProfile) {
-                if (currentProfile != null) {
-                    populateProfileInfo(currentProfile);
-                }
-            }
-        };
 
-        AccessToken accessToken = AccessToken.getCurrentAccessToken();
-        if (accessToken != null) {
-            Profile currentProfile = Profile.getCurrentProfile();
-            if (currentProfile != null) {
-                populateProfileInfo(currentProfile);
-                headerResult = new AccountHeaderBuilder()
-                        .withActivity(this)
-                        .withHeaderBackground(R.drawable.header)
-                        .addProfiles(mProfile)
-                        .withSavedInstance(savedInstanceState)
-                        .build();
-            } else {
-                Profile.fetchProfileForCurrentAccessToken();
-            }
-
-        }
-
-        result = new DrawerBuilder()
-                .withActivity(this)
-                .withToolbar(toolbar)
-                .withAccountHeader(headerResult)
-                .addDrawerItems(
-                        new PrimaryDrawerItem().withName("Home")
-                                .withIcon(FontAwesome.Icon.faw_home)
-                                .withIdentifier(0),
-                        new PrimaryDrawerItem().withName(R.string.history)
-                                .withIcon(FontAwesome.Icon.faw_history)
-                                .withIdentifier(1),
-                        new PrimaryDrawerItem().withName(R.string.donate)
-                                .withIcon(FontAwesome.Icon.faw_credit_card)
-                                .withIdentifier(2)
-                )
-                .withOnDrawerItemClickListener(new Drawer.OnDrawerItemClickListener() {
-                    @Override
-                    public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
-
-                        Log.i(TAG, "identifier: " + drawerItem.getIdentifier());
-
-                        switch ((int) drawerItem.getIdentifier()) {
-                            case 0:
-                                result.closeDrawer();
-                                return true;
-                            case 1:
-                                return true;
-                            case 2:
-                                return true;
-                            case 100:
-                                Log.i(TAG, "OnDrawerItemClickListener:register as barista");
-                                new MaterialDialog.Builder(MainActivity.this)
-                                        .title(R.string.app_name)
-                                        .theme(Theme.LIGHT)
-                                        .content(R.string.become_barista_confirmation)
-                                        .positiveText(R.string.confirm_positive)
-                                        .positiveColor(
-                                                ContextCompat.getColor(
-                                                        MainActivity.this,
-                                                        R.color.buttonText)
-                                        )
-                                        .negativeText(R.string.confirm_negative)
-                                        .negativeColor(
-                                                ContextCompat.getColor(
-                                                        MainActivity.this,
-                                                        R.color.buttonText)
-                                        )
-                                        .onPositive(new MaterialDialog.SingleButtonCallback() {
-                                            @Override
-                                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                                Log.i(TAG, "MaterialDialog.SingleButtonCallback:positive");
-                                            }
-                                        })
-                                        .onNegative(new MaterialDialog.SingleButtonCallback() {
-                                            @Override
-                                            public void onClick(@NonNull MaterialDialog dialog, @NonNull DialogAction which) {
-                                                Log.i(TAG, "MaterialDialog.SingleButtonCallback:negative");
-                                            }
-                                        })
-                                        .show();
-                                return true;
-                            case -1:
-                                Log.i(TAG, "OnDrawerItemClickListener:Logging user out");
-                                onLogout();
-                                return true;
-                            default:
-                                return false;
-                        }
-                    }
-                })
-                .addStickyDrawerItems(
-                        new SecondaryDrawerItem().withName(R.string.become_barista)
-                                .withIcon(FontAwesome.Icon.faw_hand_paper)
-                                .withIdentifier(100),
-                        new SecondaryDrawerItem().withName(R.string.log_out)
-                                .withIcon(FontAwesome.Icon.faw_sign_out_alt)
-                                .withIdentifier(-1)
-                )
-                .withSavedInstance(savedInstanceState)
-                .build();
-
+        initRecyclerView();
+        initCountryText();
+        initSwitchers();
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        callbackManager.onActivityResult(requestCode, resultCode, data);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        // Read from the database
-        mDatabaseRef.addValueEventListener(new ValueEventListener() {
+    private void populateBaristaInfo() {
+        mDatabaseRef.child(BARISTA).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                // This method is called once with the initial value and again
-                // whenever data at this location is updated.
+                dataSnapshot.getValue();
             }
 
             @Override
-            public void onCancelled(DatabaseError error) {
-                // Failed to read value
+            public void onCancelled(DatabaseError databaseError) {
+
             }
         });
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        profileTracker.startTracking();
+    private void initRecyclerView() {
+        recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        recyclerView.setAdapter(sliderAdapter);
+        recyclerView.setHasFixedSize(true);
+
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    onActiveCardChange();
+                }
+            }
+        });
+
+        layoutManger = (CardSliderLayoutManager) recyclerView.getLayoutManager();
+        new CardSnapHelper().attachToRecyclerView(recyclerView);
     }
 
-
     @Override
-    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
-        super.onSaveInstanceState(outState, outPersistentState);
+    protected void onPause() {
+        super.onPause();
     }
 
-    @Override
-    public void onBackPressed() {
-        //handle the back press :D close the drawer first and if the drawer is closed close the activity
-        if (result != null && result.isDrawerOpen()) {
-            result.closeDrawer();
+    private void initSwitchers() {
+        ratingsSwitcher = (TextSwitcher) findViewById(R.id.barista_ratings);
+        ratingsSwitcher.setFactory(new TextViewFactory(R.style.TemperatureTextView, true));
+        ratingsSwitcher.setCurrentText(ratings[0]);
+
+        placeSwitcher = (TextSwitcher) findViewById(R.id.ts_place);
+        placeSwitcher.setFactory(new TextViewFactory(R.style.PlaceTextView, false));
+        placeSwitcher.setCurrentText(places[0]);
+
+        clockSwitcher = (TextSwitcher) findViewById(R.id.ts_clock);
+        clockSwitcher.setFactory(new TextViewFactory(R.style.ClockTextView, false));
+        clockSwitcher.setCurrentText(times[0]);
+
+        descriptionsSwitcher = (TextSwitcher) findViewById(R.id.ts_description);
+        descriptionsSwitcher.setInAnimation(this, android.R.anim.fade_in);
+        descriptionsSwitcher.setOutAnimation(this, android.R.anim.fade_out);
+        descriptionsSwitcher.setFactory(new TextViewFactory(R.style.DescriptionTextView, false));
+        descriptionsSwitcher.setCurrentText(getString(descriptions[0]));
+
+    }
+
+    private void initCountryText() {
+        baristaAnimDuration = getResources().getInteger(R.integer.labels_animation_duration);
+        baristaOffset1 = getResources().getDimensionPixelSize(R.dimen.left_offset);
+        baristaOffset2 = getResources().getDimensionPixelSize(R.dimen.card_width);
+        barista1TextView = (TextView) findViewById(R.id.barista_name_1);
+        barista2TextView = (TextView) findViewById(R.id.barista_name_2);
+
+        barista1TextView.setX(baristaOffset1);
+        barista2TextView.setX(baristaOffset2);
+        barista1TextView.setText(barista[0]);
+        barista2TextView.setAlpha(0f);
+
+        barista1TextView.setTypeface(Typeface.createFromAsset(getAssets(), "open-sans-extrabold.ttf"));
+        barista2TextView.setTypeface(Typeface.createFromAsset(getAssets(), "open-sans-extrabold.ttf"));
+    }
+
+    private void setCountryText(String text, boolean left2right) {
+        final TextView invisibleText;
+        final TextView visibleText;
+        if (barista1TextView.getAlpha() > barista2TextView.getAlpha()) {
+            visibleText = barista1TextView;
+            invisibleText = barista2TextView;
         } else {
-            super.onBackPressed();
+            visibleText = barista2TextView;
+            invisibleText = barista1TextView;
         }
-    }
 
-    private void populateProfileInfo(Profile profile) {
-        callbackManager = CallbackManager.Factory.create();
-        Set permissions = AccessToken.getCurrentAccessToken().getPermissions();
-
-        if (permissions.contains("user_location")) {
-            fetchLocation();
+        final int vOffset;
+        if (left2right) {
+            invisibleText.setX(0);
+            vOffset = baristaOffset2;
         } else {
-            LoginManager loginManager = LoginManager.getInstance();
-            loginManager.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
-                @Override
-                public void onSuccess(LoginResult loginResult) {
-                    fetchLocation();
-                }
-
-                @Override
-                public void onCancel() {
-                    String permissionMessage = getResources()
-                            .getString(R.string.location_permission_message);
-                    Toast.makeText(MainActivity.this, permissionMessage, Toast.LENGTH_LONG)
-                            .show();
-                }
-
-                @Override
-                public void onError(FacebookException error) {
-
-                }
-            });
-            loginManager.logInWithReadPermissions(this, Arrays.asList("user_location"));
+            invisibleText.setX(baristaOffset2);
+            vOffset = 0;
         }
 
-        mProfile = new ProfileDrawerItem()
-                .withName(profile.getName())
-                .withIcon(profile.getProfilePictureUri(200, 200));
+        invisibleText.setText(text);
+
+        final ObjectAnimator iAlpha = ObjectAnimator.ofFloat(invisibleText, "alpha", 1f);
+        final ObjectAnimator vAlpha = ObjectAnimator.ofFloat(visibleText, "alpha", 0f);
+        final ObjectAnimator iX = ObjectAnimator.ofFloat(invisibleText, "x", baristaOffset1);
+        final ObjectAnimator vX = ObjectAnimator.ofFloat(visibleText, "x", vOffset);
+
+        final AnimatorSet animSet = new AnimatorSet();
+        animSet.playTogether(iAlpha, vAlpha, iX, vX);
+        animSet.setDuration(baristaAnimDuration);
+        animSet.start();
+    }
+
+    private void onActiveCardChange() {
+        final int pos = layoutManger.getActiveCardPosition();
+        if (pos == RecyclerView.NO_POSITION || pos == currentPosition) {
+            return;
+        }
+
+        onActiveCardChange(pos);
+    }
+
+    private void onActiveCardChange(int pos) {
+        int animH[] = new int[] {R.anim.slide_in_right, R.anim.slide_out_left};
+        int animV[] = new int[] {R.anim.slide_in_top, R.anim.slide_out_bottom};
+
+        final boolean left2right = pos < currentPosition;
+        if (left2right) {
+            animH[0] = R.anim.slide_in_left;
+            animH[1] = R.anim.slide_out_right;
+
+            animV[0] = R.anim.slide_in_bottom;
+            animV[1] = R.anim.slide_out_top;
+        }
+
+        setCountryText(barista[pos % barista.length], left2right);
+
+        ratingsSwitcher.setInAnimation(MainActivity.this, animH[0]);
+        ratingsSwitcher.setOutAnimation(MainActivity.this, animH[1]);
+        ratingsSwitcher.setText(ratings[pos % ratings.length]);
+
+        placeSwitcher.setInAnimation(MainActivity.this, animV[0]);
+        placeSwitcher.setOutAnimation(MainActivity.this, animV[1]);
+        placeSwitcher.setText(places[pos % places.length]);
+
+        clockSwitcher.setInAnimation(MainActivity.this, animV[0]);
+        clockSwitcher.setOutAnimation(MainActivity.this, animV[1]);
+        clockSwitcher.setText(times[pos % times.length]);
+
+        descriptionsSwitcher.setText(getString(descriptions[pos % descriptions.length]));
+
+        currentPosition = pos;
+    }
+
+    private class TextViewFactory implements  ViewSwitcher.ViewFactory {
+
+        @StyleRes
+        final int styleId;
+        final boolean center;
+
+        TextViewFactory(@StyleRes int styleId, boolean center) {
+            this.styleId = styleId;
+            this.center = center;
+        }
+
+        @SuppressWarnings("deprecation")
+        @Override
+        public View makeView() {
+            final TextView textView = new TextView(MainActivity.this);
+
+            if (center) {
+                textView.setGravity(Gravity.CENTER);
+            }
+
+            textView.setTextAppearance(styleId);
+
+            return textView;
+        }
 
     }
 
-    private void fetchLocation() {
-        Bundle parameters = new Bundle();
-        parameters.putString("fields", "location");
-
-        new GraphRequest(
-                AccessToken.getCurrentAccessToken(),
-                "/me",
-                parameters,
-                HttpMethod.GET,
-                new GraphRequest.Callback() {
-                    @Override
-                    public void onCompleted(GraphResponse response) {
-                        if (response.getError() != null) {
-                            Toast.makeText(MainActivity.this,
-                                    response.getError().getErrorMessage(),
-                                    Toast.LENGTH_LONG).show();
-                            return;
-                        }
-
-                        JSONObject jsonResponse = response.getJSONObject();
-                        try {
-                            JSONObject locationObj = jsonResponse.getJSONObject("location");
-                            String locationString = locationObj.getString("name");
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-        ).executeAsync();
-    }
-
-    public void onLogout() {
-        LoginManager.getInstance().logOut();
-        launchLoginActivity();
-
-        setResult(RESULT_OK);
-        finish();
-    }
-
-    private void launchLoginActivity() {
-        Intent intent = new Intent(this, LoginActivity.class);
-        startActivity(intent);
-        finish();
+    private class OnCardClickListener implements View.OnClickListener {
+        @Override
+        public void onClick(View view) {}
     }
 }

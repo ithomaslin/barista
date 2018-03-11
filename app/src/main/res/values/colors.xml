@@ -26,6 +26,6 @@
 
     <color name="green_dot_big">#009688</color>
     <color name="green_dot_small">#009688</color>
-    <color name="temperature_background">#009688</color>
-    <color name="temperature_text">#FFFFFF</color>
+    <color name="ratings_background">#348af7</color>
+    <color name="ratings_text">#FFFFFF</color>
 </resources>
