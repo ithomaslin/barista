@@ -62,9 +62,6 @@ public class MainActivity extends AppCompatActivity {
     private final String[] places = {"Taipei", "Taipei", "Taipei", "Taipei", "Taipei"};
     private final String[] ratings = {"4.1", "4.7", "4.3", "4.2", "4.5"};
     private final String[] times = {"Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00"};
-
-    private List<String> bns;
-
     private List<Barista> baristas;
 
     private final SliderAdapter sliderAdapter = new SliderAdapter(pics, uris, 5, new OnCardClickListener());
@@ -94,13 +91,6 @@ public class MainActivity extends AppCompatActivity {
         mDatabaseRef = FirebaseDatabase.getInstance().getReference();
         baristas = new ArrayList<>();
         populateBaristaInfo();
-
-        bns = new ArrayList<>();
-        bns.add("Felix Lin");
-        bns.add("Thomas");
-        bns.add("David");
-        bns.add("Ashley");
-        bns.add("Steven");
 
         initRecyclerView();
         initCountryText();
@@ -181,14 +171,14 @@ public class MainActivity extends AppCompatActivity {
 
         barista1TextView.setX(baristaOffset1);
         barista2TextView.setX(baristaOffset2);
-        barista1TextView.setText(bns.get(0));
+        barista1TextView.setText(baristaNames[0]);
         barista2TextView.setAlpha(0f);
 
         barista1TextView.setTypeface(Typeface.createFromAsset(getAssets(), "open-sans-extrabold.ttf"));
         barista2TextView.setTypeface(Typeface.createFromAsset(getAssets(), "open-sans-extrabold.ttf"));
     }
 
-    private void setCountryText(String text, boolean left2right) {
+    private void setBaristaText(String text, boolean left2right) {
         final TextView invisibleText;
         final TextView visibleText;
         if (barista1TextView.getAlpha() > barista2TextView.getAlpha()) {
@@ -243,7 +233,7 @@ public class MainActivity extends AppCompatActivity {
             animV[1] = R.anim.slide_out_top;
         }
 
-        setCountryText(bns.get(pos % bns.size()), left2right);
+        setBaristaText(baristaNames[pos % baristaNames.length], left2right);
 
         ratingsSwitcher.setInAnimation(MainActivity.this, animH[0]);
         ratingsSwitcher.setOutAnimation(MainActivity.this, animH[1]);

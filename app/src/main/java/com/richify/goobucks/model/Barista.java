@@ -14,30 +14,35 @@ import java.util.ArrayList;
 
 public class Barista {
 
-    private String displayName, email, uid, profilePictureUri;
+    private String displayName, email, uid, profilePictureUri, description, location;
     private Double rating;
-    private ArrayList<String> menu;
     private Boolean isVerified;
+
 
     public Barista() {}
 
-    public Barista(String displayName, String email, String uid,
-                   String profilePictureUri, Boolean isVerified,
-                   Double rating, @Nullable ArrayList<String> menu) {
+    public Barista(String displayName,
+                   String email,
+                   String uid,
+                   String profilePictureUri,
+                   String description,
+                   String location,
+                   Double rating,
+                   Boolean isVerified) {
+
         this.displayName = displayName;
         this.email = email;
         this.uid = uid;
         this.profilePictureUri = profilePictureUri;
-        this.isVerified = isVerified;
+        this.description = description;
+        this.location = location;
         this.rating = rating;
-        this.menu = menu;
+        this.isVerified = isVerified;
     }
 
-    @NonNull
     public String getDisplayName() {
         return displayName;
     }
-
 
     public String getEmail() {
         return email;
@@ -47,16 +52,20 @@ public class Barista {
         return uid;
     }
 
-    public Double getRating() {
-        return rating;
-    }
-
-    public ArrayList<String> getMenu() {
-        return menu;
-    }
-
     public String getProfilePictureUri() {
         return profilePictureUri;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public Double getRating() {
+        return rating;
     }
 
     public Boolean getIsVerified() {
