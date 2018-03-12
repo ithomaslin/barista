@@ -9,12 +9,14 @@ import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.DrawableRes;
+import android.support.annotation.NonNull;
 import android.support.annotation.StyleRes;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,12 +35,20 @@ import com.google.firebase.database.ValueEventListener;
 import com.ramotion.cardslider.CardSliderLayoutManager;
 import com.ramotion.cardslider.CardSnapHelper;
 import com.richify.goobucks.cards.SliderAdapter;
+import com.richify.goobucks.model.Barista;
 import com.richify.goobucks.util.DecodeBitmapTask;
 
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
 
+    private final String TAG = "MainActivity";
     private final int[] pics = {R.drawable.r1, R.drawable.r2, R.drawable.r3, R.drawable.r4, R.drawable.r5};
     private Uri[] uris = {
             Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D"),
@@ -48,10 +58,14 @@ public class MainActivity extends AppCompatActivity {
             Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D")
     };
     private final int[] descriptions = {R.string.text1, R.string.text2, R.string.text3, R.string.text4, R.string.text5};
-    private final String[] barista = {"Felix Lin", "Thomas Lin", "David Dai", "Ashley Hsieh", "Steven Tzou"};
+    private final String[] baristaNames = {"Felix Lin", "Thomas Lin", "David Dai", "Ashley Hsieh", "Steven Tzou"};
     private final String[] places = {"Taipei", "Taipei", "Taipei", "Taipei", "Taipei"};
     private final String[] ratings = {"4.1", "4.7", "4.3", "4.2", "4.5"};
     private final String[] times = {"Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00"};
+
+    private List<String> bns;
+
+    private List<Barista> baristas;
 
     private final SliderAdapter sliderAdapter = new SliderAdapter(pics, uris, 5, new OnCardClickListener());
 
@@ -78,6 +92,15 @@ public class MainActivity extends AppCompatActivity {
 
         // Initializing Firebase database reference
         mDatabaseRef = FirebaseDatabase.getInstance().getReference();
+        baristas = new ArrayList<>();
+        populateBaristaInfo();
+
+        bns = new ArrayList<>();
+        bns.add("Felix Lin");
+        bns.add("Thomas");
+        bns.add("David");
+        bns.add("Ashley");
+        bns.add("Steven");
 
         initRecyclerView();
         initCountryText();
@@ -88,7 +111,14 @@ public class MainActivity extends AppCompatActivity {
         mDatabaseRef.child(BARISTA).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                dataSnapshot.getValue();
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    Barista barista = snapshot.getValue(Barista.class);
+                    if (barista != null) {
+                        Log.i(TAG, barista.getDisplayName());
+                        baristas.add(barista);
+                    }
+                }
+
             }
 
             @Override
@@ -151,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
 
         barista1TextView.setX(baristaOffset1);
         barista2TextView.setX(baristaOffset2);
-        barista1TextView.setText(barista[0]);
+        barista1TextView.setText(bns.get(0));
         barista2TextView.setAlpha(0f);
 
         barista1TextView.setTypeface(Typeface.createFromAsset(getAssets(), "open-sans-extrabold.ttf"));
@@ -213,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
             animV[1] = R.anim.slide_out_top;
         }
 
-        setCountryText(barista[pos % barista.length], left2right);
+        setCountryText(bns.get(pos % bns.size()), left2right);
 
         ratingsSwitcher.setInAnimation(MainActivity.this, animH[0]);
         ratingsSwitcher.setOutAnimation(MainActivity.this, animH[1]);

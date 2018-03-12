@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.richify.goobucks.R;
+import com.wang.avi.AVLoadingIndicatorView;
 
 /**
  * Created by thomaslin on 11/03/2018.
@@ -31,7 +32,7 @@ public class SliderAdapter extends RecyclerView.Adapter<SliderCard> {
 
     @NonNull
     @Override
-    public SliderCard onCreateViewHolder(ViewGroup parent, int viewType) {
+    public SliderCard onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         final View view = LayoutInflater
                 .from(parent.getContext())
                 .inflate(R.layout.slider_card, parent, false);
@@ -49,13 +50,13 @@ public class SliderAdapter extends RecyclerView.Adapter<SliderCard> {
     }
 
     @Override
-    public void onBindViewHolder(SliderCard holder, int position) {
-//        holder.setContent(content[position % content.length]);
+    public void onBindViewHolder(@NonNull SliderCard holder, int position) {
+        holder.indicatorView.setIndicator("BallScaleMultipleIndicator");
         holder.setContentWithUri(uris[position % uris.length]);
     }
 
     @Override
-    public void onViewRecycled(SliderCard holder) {
+    public void onViewRecycled(@NonNull SliderCard holder) {
         holder.clearContent();
     }
 
@@ -63,4 +64,5 @@ public class SliderAdapter extends RecyclerView.Adapter<SliderCard> {
     public int getItemCount() {
         return count;
     }
+
 }

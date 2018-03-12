@@ -12,7 +12,9 @@ import android.widget.ImageView;
 import com.bumptech.glide.Glide;
 import com.richify.goobucks.R;
 import com.richify.goobucks.util.DecodeBitmapTask;
+import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
+import com.wang.avi.AVLoadingIndicatorView;
 
 /**
  * Created by thomaslin on 11/03/2018.
@@ -26,11 +28,16 @@ public class SliderCard extends RecyclerView.ViewHolder implements DecodeBitmapT
     private final ImageView imageView;
     private DecodeBitmapTask task;
     private Context context;
+    public AVLoadingIndicatorView indicatorView;
 
     public SliderCard(View itemView) {
         super(itemView);
+
         imageView = (ImageView) itemView.findViewById(R.id.image);
         this.context = imageView.getContext();
+
+        indicatorView = (AVLoadingIndicatorView) itemView.findViewById(R.id.indicator);
+        indicatorView.smoothToShow();
     }
 
     public void setContent(@DrawableRes final int resId) {
@@ -63,13 +70,33 @@ public class SliderCard extends RecyclerView.ViewHolder implements DecodeBitmapT
 
                             Picasso.with(context)
                                     .load(uri)
-                                    .into(imageView);
+                                    .into(imageView, new Callback() {
+                                        @Override
+                                        public void onSuccess() {
+                                            indicatorView.smoothToHide();
+                                        }
+
+                                        @Override
+                                        public void onError() {
+
+                                        }
+                                    });
                         }
                     });
         } else {
             Picasso.with(context)
                     .load(uri)
-                    .into(imageView);
+                    .into(imageView, new Callback() {
+                        @Override
+                        public void onSuccess() {
+                            indicatorView.smoothToHide();
+                        }
+
+                        @Override
+                        public void onError() {
+
+                        }
+                    });
         }
     }
 
