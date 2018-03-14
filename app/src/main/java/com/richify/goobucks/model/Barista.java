@@ -18,7 +18,6 @@ public class Barista {
     private Double rating;
     private Boolean isVerified;
 
-
     public Barista() {}
 
     public Barista(String displayName,
@@ -44,11 +43,26 @@ public class Barista {
         return displayName;
     }
 
+    public String setDisplayName(String _name) {
+        this.displayName = _name;
+        return displayName;
+    }
+
     public String getEmail() {
         return email;
     }
 
+    public String setEmail(String _email) {
+        this.email = _email;
+        return email;
+    }
+
     public String getUid() {
+        return uid;
+    }
+
+    public String setUid(String _uid) {
+        this.uid = _uid;
         return uid;
     }
 

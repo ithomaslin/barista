@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.StyleRes;
 import android.support.v4.view.ViewCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -18,6 +19,7 @@ import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -27,6 +29,12 @@ import android.widget.TextSwitcher;
 import android.widget.TextView;
 import android.widget.ViewSwitcher;
 
+import com.firebase.ui.database.FirebaseRecyclerAdapter;
+import com.firebase.ui.database.FirebaseRecyclerOptions;
+import com.firebase.ui.database.SnapshotParser;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -35,36 +43,29 @@ import com.google.firebase.database.ValueEventListener;
 import com.ramotion.cardslider.CardSliderLayoutManager;
 import com.ramotion.cardslider.CardSnapHelper;
 import com.richify.goobucks.cards.SliderAdapter;
+import com.richify.goobucks.cards.SliderCard;
 import com.richify.goobucks.model.Barista;
 import com.richify.goobucks.util.DecodeBitmapTask;
+import com.squareup.picasso.Picasso;
 
 import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements
+        GoogleApiClient.OnConnectionFailedListener {
 
     private final String TAG = "MainActivity";
-    private final int[] pics = {R.drawable.r1, R.drawable.r2, R.drawable.r3, R.drawable.r4, R.drawable.r5};
-    private Uri[] uris = {
-            Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D"),
-            Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D"),
-            Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D"),
-            Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D"),
-            Uri.parse("https://graph.facebook.com/10213189667194885/picture?height=200&width=200&migration_overrides=%7Boctober_2012%3Atrue%7D")
-    };
-    private final int[] descriptions = {R.string.text1, R.string.text2, R.string.text3, R.string.text4, R.string.text5};
-    private final String[] baristaNames = {"Felix Lin", "Thomas Lin", "David Dai", "Ashley Hsieh", "Steven Tzou"};
-    private final String[] places = {"Taipei", "Taipei", "Taipei", "Taipei", "Taipei"};
-    private final String[] ratings = {"4.1", "4.7", "4.3", "4.2", "4.5"};
+    private final String BARISTA = "barista";
     private final String[] times = {"Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00"};
-    private List<Barista> baristas;
-
-    private final SliderAdapter sliderAdapter = new SliderAdapter(pics, uris, 5, new OnCardClickListener());
+    private LinkedHashMap<String, Barista> baristaMap;
 
     private CardSliderLayoutManager layoutManger;
     private RecyclerView recyclerView;
@@ -79,35 +80,125 @@ public class MainActivity extends AppCompatActivity {
     private int baristaOffset2;
     private long baristaAnimDuration;
     private int currentPosition;
-    private DatabaseReference mDatabaseRef;
-    private final String BARISTA = "barista";
+    private DatabaseReference mFirebaseDatabaseReference;
+    private FirebaseRecyclerAdapter<Barista, SliderCard> mFirebaseAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        baristaMap = new LinkedHashMap<>();
+
         // Initializing Firebase database reference
-        mDatabaseRef = FirebaseDatabase.getInstance().getReference();
-        baristas = new ArrayList<>();
-        populateBaristaInfo();
+        mFirebaseDatabaseReference = FirebaseDatabase.getInstance().getReference();
+        SnapshotParser<Barista> parser = new SnapshotParser<Barista>() {
+            @NonNull
+            @Override
+            public Barista parseSnapshot(@NonNull DataSnapshot snapshot) {
+                Barista barista = snapshot.getValue(Barista.class);
+                if (barista != null) {
+                    barista.setUid(snapshot.getKey());
+                }
+                return barista;
+            }
+        };
 
+        DatabaseReference baristaRef = mFirebaseDatabaseReference.child(BARISTA);
+        FirebaseRecyclerOptions<Barista> options = new FirebaseRecyclerOptions.Builder<Barista>()
+                .setQuery(baristaRef, parser)
+                .build();
+
+        mFirebaseAdapter = new FirebaseRecyclerAdapter<Barista, SliderCard>(options) {
+            @Override
+            protected void onBindViewHolder(@NonNull SliderCard holder, int position, @NonNull Barista model) {
+                if (model.getProfilePictureUri() != null) {
+                    holder.setContentWithUri(Uri.parse(model.getProfilePictureUri()));
+                } else {
+                    Uri profileUri = Uri.parse(model.getProfilePictureUri());
+                    Picasso.with(holder.imageView.getContext())
+                            .load(profileUri)
+                            .into(holder.imageView);
+                }
+            }
+
+            @NonNull
+            @Override
+            public SliderCard onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                View view = LayoutInflater.from(parent.getContext())
+                        .inflate(R.layout.slider_card, parent, false);
+                return new SliderCard(view);
+            }
+        };
+
+        mFirebaseAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount) {
+                super.onItemRangeInserted(positionStart, itemCount);
+                recyclerView.scrollToPosition(0);
+            }
+
+            @Override
+            public void onItemRangeChanged(int positionStart, int itemCount, @Nullable Object payload) {
+                super.onItemRangeChanged(positionStart, itemCount, payload);
+                if (payload != null) {
+                    Log.i(TAG, payload.toString());
+                }
+            }
+        });
         initRecyclerView();
-        initCountryText();
-        initSwitchers();
-    }
 
-    private void populateBaristaInfo() {
-        mDatabaseRef.child(BARISTA).addValueEventListener(new ValueEventListener() {
+        mFirebaseDatabaseReference.child(BARISTA).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    Barista barista = snapshot.getValue(Barista.class);
-                    if (barista != null) {
-                        Log.i(TAG, barista.getDisplayName());
-                        baristas.add(barista);
+                    Barista _barista = snapshot.getValue(Barista.class);
+                    String key = snapshot.getKey();
+                    baristaMap.put(key, _barista);
+                }
+                initBaristaName();
+                initSwitchers();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+        mFirebaseDatabaseReference.child(BARISTA).addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+                if (dataSnapshot != null) {
+                    String key = dataSnapshot.getKey();
+                    if (!baristaMap.containsKey(key)) {
+                        Barista _b = dataSnapshot.getValue(Barista.class);
+                        baristaMap.put(key, _b);
                     }
                 }
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+                if (dataSnapshot != null) {
+                    String key = dataSnapshot.getKey();
+                    if (baristaMap.containsKey(key)) {
+                        Barista _b = dataSnapshot.getValue(Barista.class);
+                        baristaMap.put(key, _b);
+                    }
+                }
+            }
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {
+                if (dataSnapshot != null) {
+                    String key = dataSnapshot.getKey();
+                    baristaMap.remove(key);
+                }
+            }
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {
 
             }
 
@@ -116,11 +207,12 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
     }
 
     private void initRecyclerView() {
         recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-        recyclerView.setAdapter(sliderAdapter);
+        recyclerView.setAdapter(mFirebaseAdapter);
         recyclerView.setHasFixedSize(true);
 
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -138,17 +230,24 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onPause() {
+        mFirebaseAdapter.stopListening();
         super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mFirebaseAdapter.startListening();
     }
 
     private void initSwitchers() {
         ratingsSwitcher = (TextSwitcher) findViewById(R.id.barista_ratings);
         ratingsSwitcher.setFactory(new TextViewFactory(R.style.TemperatureTextView, true));
-        ratingsSwitcher.setCurrentText(ratings[0]);
+        ratingsSwitcher.setCurrentText((new ArrayList<>(baristaMap.values())).get(0).getRating().toString());
 
         placeSwitcher = (TextSwitcher) findViewById(R.id.ts_place);
         placeSwitcher.setFactory(new TextViewFactory(R.style.PlaceTextView, false));
-        placeSwitcher.setCurrentText(places[0]);
+        placeSwitcher.setCurrentText((new ArrayList<>(baristaMap.values())).get(0).getLocation());
 
         clockSwitcher = (TextSwitcher) findViewById(R.id.ts_clock);
         clockSwitcher.setFactory(new TextViewFactory(R.style.ClockTextView, false));
@@ -158,11 +257,11 @@ public class MainActivity extends AppCompatActivity {
         descriptionsSwitcher.setInAnimation(this, android.R.anim.fade_in);
         descriptionsSwitcher.setOutAnimation(this, android.R.anim.fade_out);
         descriptionsSwitcher.setFactory(new TextViewFactory(R.style.DescriptionTextView, false));
-        descriptionsSwitcher.setCurrentText(getString(descriptions[0]));
+        descriptionsSwitcher.setCurrentText((new ArrayList<>(baristaMap.values())).get(0).getDescription());
 
     }
 
-    private void initCountryText() {
+    private void initBaristaName() {
         baristaAnimDuration = getResources().getInteger(R.integer.labels_animation_duration);
         baristaOffset1 = getResources().getDimensionPixelSize(R.dimen.left_offset);
         baristaOffset2 = getResources().getDimensionPixelSize(R.dimen.card_width);
@@ -171,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
 
         barista1TextView.setX(baristaOffset1);
         barista2TextView.setX(baristaOffset2);
-        barista1TextView.setText(baristaNames[0]);
+        barista1TextView.setText((new ArrayList<>(baristaMap.values())).get(0).getDisplayName());
         barista2TextView.setAlpha(0f);
 
         barista1TextView.setTypeface(Typeface.createFromAsset(getAssets(), "open-sans-extrabold.ttf"));
@@ -233,26 +332,26 @@ public class MainActivity extends AppCompatActivity {
             animV[1] = R.anim.slide_out_top;
         }
 
-        setBaristaText(baristaNames[pos % baristaNames.length], left2right);
+        setBaristaText((new ArrayList<>(baristaMap.values())).get(pos % baristaMap.size()).getDisplayName(), left2right);
 
         ratingsSwitcher.setInAnimation(MainActivity.this, animH[0]);
         ratingsSwitcher.setOutAnimation(MainActivity.this, animH[1]);
-        ratingsSwitcher.setText(ratings[pos % ratings.length]);
+        ratingsSwitcher.setText((new ArrayList<>(baristaMap.values())).get(pos % baristaMap.size()).getRating().toString());
 
         placeSwitcher.setInAnimation(MainActivity.this, animV[0]);
         placeSwitcher.setOutAnimation(MainActivity.this, animV[1]);
-        placeSwitcher.setText(places[pos % places.length]);
+        placeSwitcher.setText((new ArrayList<>(baristaMap.values())).get(pos % baristaMap.size()).getLocation());
 
         clockSwitcher.setInAnimation(MainActivity.this, animV[0]);
         clockSwitcher.setOutAnimation(MainActivity.this, animV[1]);
         clockSwitcher.setText(times[pos % times.length]);
 
-        descriptionsSwitcher.setText(getString(descriptions[pos % descriptions.length]));
+        descriptionsSwitcher.setText((new ArrayList<>(baristaMap.values())).get(pos % baristaMap.size()).getDescription());
 
         currentPosition = pos;
     }
 
-    private class TextViewFactory implements  ViewSwitcher.ViewFactory {
+    private class TextViewFactory implements ViewSwitcher.ViewFactory {
 
         @StyleRes
         final int styleId;
@@ -282,5 +381,10 @@ public class MainActivity extends AppCompatActivity {
     private class OnCardClickListener implements View.OnClickListener {
         @Override
         public void onClick(View view) {}
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
     }
 }

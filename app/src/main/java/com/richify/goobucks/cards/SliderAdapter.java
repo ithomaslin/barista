@@ -11,6 +11,8 @@ import android.view.ViewGroup;
 import com.richify.goobucks.R;
 import com.wang.avi.AVLoadingIndicatorView;
 
+import java.util.List;
+
 /**
  * Created by thomaslin on 11/03/2018.
  *
@@ -18,13 +20,11 @@ import com.wang.avi.AVLoadingIndicatorView;
 
 public class SliderAdapter extends RecyclerView.Adapter<SliderCard> {
 
-    private final int count;
-    private final int[] content;
-    private final Uri[] uris;
-    private final View.OnClickListener listener;
+    private int count;
+    private List<Uri> uris;
+    private View.OnClickListener listener;
 
-    public SliderAdapter(@Nullable int[] content, @Nullable Uri[] uris, int count, View.OnClickListener listener) {
-        this.content = content;
+    public SliderAdapter(List<Uri> uris, int count, View.OnClickListener listener) {
         this.uris = uris;
         this.count = count;
         this.listener = listener;
@@ -52,7 +52,7 @@ public class SliderAdapter extends RecyclerView.Adapter<SliderCard> {
     @Override
     public void onBindViewHolder(@NonNull SliderCard holder, int position) {
         holder.indicatorView.setIndicator("BallScaleMultipleIndicator");
-        holder.setContentWithUri(uris[position % uris.length]);
+        holder.setContentWithUri(uris.get(position % uris.size()));
     }
 
     @Override

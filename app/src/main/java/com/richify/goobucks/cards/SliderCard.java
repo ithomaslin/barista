@@ -23,9 +23,9 @@ import com.wang.avi.AVLoadingIndicatorView;
 
 public class SliderCard extends RecyclerView.ViewHolder implements DecodeBitmapTask.Listener {
 
+    public ImageView imageView;
     private static int viewWidth = 0;
     private static int viewHeight = 0;
-    private final ImageView imageView;
     private DecodeBitmapTask task;
     private Context context;
     public AVLoadingIndicatorView indicatorView;
