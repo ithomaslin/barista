@@ -1,6 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
     android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp">
+
+        <ImageView
+            android:id="@+id/profile_image"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:src="@color/material_drawer_dark_hint_text"/>
+
+        <TextView
+            android:id="@+id/order_dialog_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:height="48dp"
+            android:layout_gravity="center_vertical|start"
+            android:textColor="@color/primary_text"
+            android:textSize="16sp"
+            android:layout_toEndOf="@id/profile_image"
+            android:layout_marginStart="10dp"/>
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/dialog_section_margin_top">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/select_coffee_type"
+            android:textColor="@color/secondary_text"/>
+
+        <RadioGroup
+            android:id="@+id/coffee_type_group"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:orientation="vertical"
+            android:layout_marginTop="@dimen/dialog_radio_group_margin_top"
+            android:layout_marginStart="@dimen/dialog_radio_group_margin_start" />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="28dp"
+        android:layout_marginTop="@dimen/dialog_section_margin_top">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:text="@string/is_decaf"
+            android:textColor="@color/secondary_text"
+            android:layout_toStartOf="@id/decaf_switch"
+            android:gravity="center"
+            android:layout_alignParentEnd="true"
+            android:layout_marginEnd="50dp"/>
+
+        <android.support.v7.widget.SwitchCompat
+            android:id="@+id/decaf_switch"
+            android:theme="@style/ThemeOverlay.CustomSwitch"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:layout_alignParentEnd="true"/>
+
+    </RelativeLayout>
+
 
 </LinearLayout>

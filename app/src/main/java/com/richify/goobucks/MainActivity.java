@@ -5,7 +5,11 @@ import android.animation.ObjectAnimator;
 import android.app.ActivityOptions;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.ColorFilter;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.DrawableRes;
@@ -17,18 +21,25 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.widget.CompoundButton;
 import android.widget.ImageSwitcher;
 import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.Switch;
 import android.widget.TextSwitcher;
 import android.widget.TextView;
 import android.widget.ViewSwitcher;
 
+import com.afollestad.materialdialogs.DialogAction;
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.firebase.ui.database.SnapshotParser;
@@ -45,8 +56,10 @@ import com.ramotion.cardslider.CardSnapHelper;
 import com.richify.goobucks.cards.SliderAdapter;
 import com.richify.goobucks.cards.SliderCard;
 import com.richify.goobucks.model.Barista;
+import com.richify.goobucks.util.CircleTransform;
 import com.richify.goobucks.util.DecodeBitmapTask;
 import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
 
 import org.json.JSONObject;
 
@@ -59,11 +72,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import de.hdodenhof.circleimageview.CircleImageView;
+
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener {
 
     private final String TAG = "MainActivity";
     private final String BARISTA = "barista";
+    private final String COFFEE = "coffee";
+    private final String TYPES = "types";
+    private final String ORDERS = "orders";
+
     private final String[] times = {"Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00"};
     private LinkedHashMap<String, Barista> baristaMap;
 
@@ -82,6 +101,11 @@ public class MainActivity extends AppCompatActivity implements
     private int currentPosition;
     private DatabaseReference mFirebaseDatabaseReference;
     private FirebaseRecyclerAdapter<Barista, SliderCard> mFirebaseAdapter;
+
+    private final int TYPE_NOT_SELECTED = 10000;
+    private View positiveAction;
+    private boolean isDecaf = false;
+    private int coffeeType = TYPE_NOT_SELECTED;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,6 +144,17 @@ public class MainActivity extends AppCompatActivity implements
                             .load(profileUri)
                             .into(holder.imageView);
                 }
+
+                holder.itemView.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        int clickPosition = recyclerView.getChildAdapterPosition(v);
+                        if (clickPosition == currentPosition) {
+                            Log.i(TAG, (new ArrayList<>(baristaMap.values())).get(clickPosition).getUid());
+                            orderDialogue();
+                        }
+                    }
+                });
             }
 
             @NonNull
@@ -129,6 +164,8 @@ public class MainActivity extends AppCompatActivity implements
                         .inflate(R.layout.slider_card, parent, false);
                 return new SliderCard(view);
             }
+
+
         };
 
         mFirebaseAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
@@ -136,6 +173,7 @@ public class MainActivity extends AppCompatActivity implements
             public void onItemRangeInserted(int positionStart, int itemCount) {
                 super.onItemRangeInserted(positionStart, itemCount);
                 recyclerView.scrollToPosition(0);
+                onActiveCardChange();
             }
 
             @Override
@@ -351,6 +389,124 @@ public class MainActivity extends AppCompatActivity implements
         currentPosition = pos;
     }
 
+    private void orderDialogue() {
+        Barista _b = (new ArrayList<>(baristaMap.values())).get(currentPosition);
+
+        Picasso.with(this)
+                .load(Uri.parse(_b.getProfilePictureUri()))
+                .transform(new CircleTransform())
+                .into(new Target() {
+                    @Override
+                    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+                        Drawable drawable = new BitmapDrawable(
+                                getBaseContext().getResources(),
+                                bitmap
+                        );
+                        showOrderDialogueWithImageAndBaristaName(drawable, _b.getDisplayName(), _b.getUid());
+                    }
+
+                    @Override
+                    public void onBitmapFailed(Drawable errorDrawable) {
+                        // TODO: handle failed situation
+                    }
+
+                    @Override
+                    public void onPrepareLoad(Drawable placeHolderDrawable) {
+                        // TODO: placeholder for prepare load
+                    }
+                });
+    }
+
+    private void showOrderDialogueWithImageAndBaristaName(Drawable imageDrawable, String name, String assigneeId) {
+
+        MaterialDialog orderDialog = new MaterialDialog.Builder(this)
+                .customView(R.layout.order_dialogue, true)
+                .positiveText(R.string.order_dialog_submit)
+                .negativeText(R.string.order_dialog_cancel)
+                .positiveColor(getColor(R.color.primary))
+                .negativeColor(getColor(R.color.secondary_text))
+                .onPositive(
+                        (dialog, which) -> onDialogPositiveClicked(isDecaf, coffeeType, assigneeId)
+                )
+                .build();
+
+        positiveAction = orderDialog.getActionButton(DialogAction.POSITIVE);
+
+        ImageView profileImageView = orderDialog
+                .getCustomView().findViewById(R.id.profile_image);
+        profileImageView.setImageDrawable(imageDrawable);
+
+        TextView titleTextView = orderDialog.getCustomView().findViewById(R.id.order_dialog_title);
+        titleTextView.setText(getString(R.string.order_title, name));
+
+        RadioGroup radioGroup = orderDialog.getCustomView().findViewById(R.id.coffee_type_group);
+        radioGroup = insertCoffeeTypesButtons(radioGroup);
+
+        SwitchCompat switchCompat = orderDialog.getCustomView().findViewById(R.id.decaf_switch);
+        switchCompat.setOnCheckedChangeListener(
+                (buttonView, isChecked) -> decafSetter(isChecked)
+        );
+
+        radioGroup.setOnCheckedChangeListener(
+                (group, checkedId) -> coffeeTypeSetter(checkedId)
+        );
+
+        orderDialog.show();
+        positiveAction.setEnabled(false);
+    }
+
+    private void decafSetter(boolean isDecaf) {
+        this.isDecaf = isDecaf;
+    }
+
+    private void coffeeTypeSetter(int type) {
+        this.coffeeType = type;
+        positiveAction.setEnabled(true);
+    }
+
+    private void onDialogPositiveClicked(boolean isDecaf, int type, String assigneeId) {
+        if (type == TYPE_NOT_SELECTED)
+            return;
+
+        Log.i(TAG, "is decaf? " + isDecaf);
+        Log.i(TAG, "type of coffee? " + type);
+        Log.i(TAG, "assignee: " + assigneeId);
+    }
+
+    private RadioGroup insertCoffeeTypesButtons(final RadioGroup radioGroup) {
+        mFirebaseDatabaseReference
+                .child(COFFEE)
+                .child(TYPES)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot != null) {
+                    RadioGroup.LayoutParams params = new RadioGroup.LayoutParams(
+                            RadioGroup.LayoutParams.MATCH_PARENT,
+                            RadioGroup.LayoutParams.WRAP_CONTENT
+                    );
+                    params.setMargins(0, 10, 0, 10);
+
+                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        RadioButton radioButton = new RadioButton(getBaseContext());
+                        radioButton.setLayoutParams(params);
+                        radioButton.setText(snapshot.getValue().toString());
+                        radioButton.setId(Integer.parseInt(snapshot.getKey()));
+
+                        radioGroup.addView(radioButton, 0);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+        return radioGroup;
+    }
+
     private class TextViewFactory implements ViewSwitcher.ViewFactory {
 
         @StyleRes
@@ -380,7 +536,24 @@ public class MainActivity extends AppCompatActivity implements
 
     private class OnCardClickListener implements View.OnClickListener {
         @Override
-        public void onClick(View view) {}
+        public void onClick(View view) {
+            final CardSliderLayoutManager sliderLayoutManager = (CardSliderLayoutManager)
+                    recyclerView.getLayoutManager();
+
+            if (sliderLayoutManager.isSmoothScrolling()) {
+                return;
+            }
+
+            final int activeCardPosition = sliderLayoutManager.getActiveCardPosition();
+            if (activeCardPosition == RecyclerView.NO_POSITION) {
+                return;
+            }
+
+            int clickPosition = recyclerView.getChildAdapterPosition(view);
+            if (clickPosition == activeCardPosition) {
+                Log.i(TAG, (new ArrayList<>(baristaMap.values())).get(currentPosition).getUid());
+            }
+        }
     }
 
     @Override

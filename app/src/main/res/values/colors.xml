@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#009688</color>
-    <color name="primary_dark">#00796B</color>
-    <color name="primary_light">#B2DFDB</color>
-    <color name="accent">#795548</color>
+    <color name="primary">#2196F3</color>
+    <color name="primary_dark">#1976D2</color>
+    <color name="primary_light">#BBDEFB</color>
+    <color name="accent">#FF5252</color>
     <color name="primary_text">#212121</color>
     <color name="secondary_text">#757575</color>
     <color name="icons">#FFFFFF</color>
@@ -16,16 +16,16 @@
 
     <color name="background">#d5f0ec</color>
     <color name="text">#61727f</color>
-    <color name="buttonBackground">#09d4b6</color>
-    <color name="buttonPressedBackground">#00c5a5</color>
+    <color name="buttonBackground">#348af7</color>
+    <color name="buttonPressedBackground">#348af7</color>
     <color name="buttonText">#ffffff</color>
     <color name="inputBackground">#ffffff</color>
     <color name="inputText">#7d97ad</color>
-    <color name="statusBar">#00c5a5</color>
-    <color name="icon">#09d4b6</color>
+    <color name="statusBar">#1976D2</color>
+    <color name="icon">#348af7</color>
 
-    <color name="green_dot_big">#009688</color>
-    <color name="green_dot_small">#009688</color>
+    <color name="green_dot_big">#348af7</color>
+    <color name="green_dot_small">#348af7</color>
     <color name="ratings_background">#348af7</color>
     <color name="ratings_text">#FFFFFF</color>
 </resources>

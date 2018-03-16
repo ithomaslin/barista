@@ -9,7 +9,7 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="38dp"
-        android:layout_marginTop="30dp">
+        android:layout_marginTop="200dp">
 
         <FrameLayout
             android:id="@+id/barista"
@@ -72,11 +72,11 @@
         android:layout_marginTop="15dp">
 
         <ImageView
-            android:layout_width="13dp"
-            android:layout_height="13dp"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="30dp"
-            android:src="@drawable/star"
+            android:src="@drawable/map_marker"
             android:scaleType="fitCenter"/>
 
         <TextSwitcher
@@ -99,14 +99,22 @@
             android:layout_width="match_parent"
             android:layout_height="90dp" />
 
+        <TextSwitcher
+            android:id="@+id/ts_description"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/left_offset"
+            android:layout_marginEnd="10dp"/>
+
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp">
+            android:layout_marginTop="10dp"
+            android:layout_below="@id/ts_description">
 
             <ImageView
-                android:layout_width="13dp"
-                android:layout_height="13dp"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
                 android:layout_gravity="center_vertical"
                 android:layout_marginStart="30dp"
                 android:src="@drawable/clock"
@@ -120,13 +128,6 @@
                 android:layout_marginStart="@dimen/left_offset"/>
 
         </FrameLayout>
-
-        <TextSwitcher
-            android:id="@+id/ts_description"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/left_offset"
-            android:layout_marginTop="40dp"/>
 
     </RelativeLayout>
 

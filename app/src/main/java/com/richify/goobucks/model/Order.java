@@ -15,36 +15,58 @@ public class Order {
         PENDING, ASSIGNED, DELIVERED
     }
 
-    private String ownerId, baristaId, orderId, orderStatus;
+    private String orderId, ownerId, assigneeId, feedback;
+    private int type, status, rating;
+    private Boolean isDecaf;
     private Timestamp createdAt;
 
-    public Order(String ownerId, String baristaId, String orderId, String orderStatus, Timestamp createdAt) {
+    public Order(String ownerId, String assigneeId,
+                 String feedback, int type, int status,
+                 int rating, Boolean isDecaf, Timestamp createdAt) {
         this.ownerId = ownerId;
-        this.baristaId = baristaId;
-        this.orderId = orderId;
-        this.orderStatus = orderStatus;
+        this.assigneeId = assigneeId;
+        this.feedback = feedback;
+        this.type = type;
+        this.status = status;
+        this.rating = rating;
+        this.isDecaf = isDecaf;
         this.createdAt = createdAt;
     }
 
-    public String getOwnerId() {
-        return ownerId;
-    }
-
-    public String getBaristaId() {
-        return baristaId;
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
     }
 
     public String getOrderId() {
         return orderId;
     }
 
-    public String getOrderStatus() {
-        return orderStatus;
+    public String getOwnerId() {
+        return ownerId;
     }
 
-    public String updateOrderStatus(String _orderStatus) {
-        this.orderStatus = _orderStatus;
-        return orderStatus;
+    public String getAssigneeId() {
+        return assigneeId;
+    }
+
+    public String getFeedback() {
+        return feedback;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public int getRating() {
+        return rating;
+    }
+
+    public Boolean getIsDecaf() {
+        return isDecaf;
     }
 
     public Timestamp getCreatedAt() {

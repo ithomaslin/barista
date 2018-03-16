@@ -36,9 +36,12 @@
     <string name="history">History</string>
     <string name="preference_file_key">com.richify.goobucks.preference_key.440787206356691</string>
 
-    <string name="text1">一個變態</string>
-    <string name="text2">優質咖啡師</string>
-    <string name="text3">Party King</string>
-    <string name="text4">正妹咖啡師</string>
-    <string name="text5">天才型咖啡師</string>
+    <string name="latte">Latte</string>
+    <string name="mocha">Mocha</string>
+    <string name="americano">Americano</string>
+    <string name="is_decaf">Decaf?</string>
+    <string name="order_title">Do you want to order coffee from %1$s?</string>
+    <string name="select_coffee_type">Select the type of coffee you want:</string>
+    <string name="order_dialog_submit">Submit</string>
+    <string name="order_dialog_cancel">Cancel</string>
 </resources>
