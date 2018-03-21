@@ -3,7 +3,9 @@ package com.richify.goobucks;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.ActivityOptions;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
@@ -28,6 +30,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ImageSwitcher;
 import android.widget.ImageView;
@@ -45,6 +48,9 @@ import com.firebase.ui.database.FirebaseRecyclerOptions;
 import com.firebase.ui.database.SnapshotParser;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -56,6 +62,7 @@ import com.ramotion.cardslider.CardSnapHelper;
 import com.richify.goobucks.cards.SliderAdapter;
 import com.richify.goobucks.cards.SliderCard;
 import com.richify.goobucks.model.Barista;
+import com.richify.goobucks.model.Order;
 import com.richify.goobucks.util.CircleTransform;
 import com.richify.goobucks.util.DecodeBitmapTask;
 import com.squareup.picasso.Picasso;
@@ -63,14 +70,19 @@ import com.squareup.picasso.Target;
 
 import org.json.JSONObject;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
@@ -82,6 +94,8 @@ public class MainActivity extends AppCompatActivity implements
     private final String COFFEE = "coffee";
     private final String TYPES = "types";
     private final String ORDERS = "orders";
+    private final String HAS_OPEN_ORDER = "hasOpenOrder";
+    private final String OPEN_ORDER_KEY = "openOrderKey";
 
     private final String[] times = {"Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00", "Mon - Fri    12:00-14:00"};
     private LinkedHashMap<String, Barista> baristaMap;
@@ -99,6 +113,8 @@ public class MainActivity extends AppCompatActivity implements
     private int baristaOffset2;
     private long baristaAnimDuration;
     private int currentPosition;
+    private FirebaseAuth mAuth;
+    private FirebaseUser mUser;
     private DatabaseReference mFirebaseDatabaseReference;
     private FirebaseRecyclerAdapter<Barista, SliderCard> mFirebaseAdapter;
 
@@ -107,12 +123,22 @@ public class MainActivity extends AppCompatActivity implements
     private boolean isDecaf = false;
     private int coffeeType = TYPE_NOT_SELECTED;
 
+    private SharedPreferences userSharedPreference;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         baristaMap = new LinkedHashMap<>();
+
+        // initialize FirebaseAuth and current user
+        mAuth = FirebaseAuth.getInstance();
+        mUser = mAuth.getCurrentUser();
+
+        userSharedPreference = getBaseContext().getSharedPreferences(
+                getString(R.string.preference_file_key), Context.MODE_PRIVATE
+        );
 
         // Initializing Firebase database reference
         mFirebaseDatabaseReference = FirebaseDatabase.getInstance().getReference();
@@ -151,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements
                         int clickPosition = recyclerView.getChildAdapterPosition(v);
                         if (clickPosition == currentPosition) {
                             Log.i(TAG, (new ArrayList<>(baristaMap.values())).get(clickPosition).getUid());
-                            orderDialogue();
+                            showOrderDialogue();
                         }
                     }
                 });
@@ -164,8 +190,6 @@ public class MainActivity extends AppCompatActivity implements
                         .inflate(R.layout.slider_card, parent, false);
                 return new SliderCard(view);
             }
-
-
         };
 
         mFirebaseAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
@@ -186,7 +210,8 @@ public class MainActivity extends AppCompatActivity implements
         });
         initRecyclerView();
 
-        mFirebaseDatabaseReference.child(BARISTA).addListenerForSingleValueEvent(new ValueEventListener() {
+        mFirebaseDatabaseReference.child(BARISTA)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
@@ -194,6 +219,7 @@ public class MainActivity extends AppCompatActivity implements
                     String key = snapshot.getKey();
                     baristaMap.put(key, _barista);
                 }
+
                 initBaristaName();
                 initSwitchers();
             }
@@ -246,10 +272,13 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
 
+        Button orderButton = findViewById(R.id.order_button);
+        orderButton.setOnClickListener((v) -> showOrderDialogue());
+
     }
 
     private void initRecyclerView() {
-        recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        recyclerView = findViewById(R.id.recycler_view);
         recyclerView.setAdapter(mFirebaseAdapter);
         recyclerView.setHasFixedSize(true);
 
@@ -389,7 +418,7 @@ public class MainActivity extends AppCompatActivity implements
         currentPosition = pos;
     }
 
-    private void orderDialogue() {
+    private void showOrderDialogue() {
         Barista _b = (new ArrayList<>(baristaMap.values())).get(currentPosition);
 
         Picasso.with(this)
@@ -402,7 +431,7 @@ public class MainActivity extends AppCompatActivity implements
                                 getBaseContext().getResources(),
                                 bitmap
                         );
-                        showOrderDialogueWithImageAndBaristaName(drawable, _b.getDisplayName(), _b.getUid());
+                        showOrderDialogueWithImageAndBarista(drawable, _b);
                     }
 
                     @Override
@@ -417,7 +446,7 @@ public class MainActivity extends AppCompatActivity implements
                 });
     }
 
-    private void showOrderDialogueWithImageAndBaristaName(Drawable imageDrawable, String name, String assigneeId) {
+    private void showOrderDialogueWithImageAndBarista(Drawable imageDrawable, Barista barista) {
 
         MaterialDialog orderDialog = new MaterialDialog.Builder(this)
                 .customView(R.layout.order_dialogue, true)
@@ -426,7 +455,7 @@ public class MainActivity extends AppCompatActivity implements
                 .positiveColor(getColor(R.color.primary))
                 .negativeColor(getColor(R.color.secondary_text))
                 .onPositive(
-                        (dialog, which) -> onDialogPositiveClicked(isDecaf, coffeeType, assigneeId)
+                        (dialog, which) -> onDialogPositiveClicked(isDecaf, coffeeType, barista.getUid())
                 )
                 .build();
 
@@ -437,7 +466,7 @@ public class MainActivity extends AppCompatActivity implements
         profileImageView.setImageDrawable(imageDrawable);
 
         TextView titleTextView = orderDialog.getCustomView().findViewById(R.id.order_dialog_title);
-        titleTextView.setText(getString(R.string.order_title, name));
+        titleTextView.setText(getString(R.string.order_title, barista.getDisplayName()));
 
         RadioGroup radioGroup = orderDialog.getCustomView().findViewById(R.id.coffee_type_group);
         radioGroup = insertCoffeeTypesButtons(radioGroup);
@@ -468,9 +497,24 @@ public class MainActivity extends AppCompatActivity implements
         if (type == TYPE_NOT_SELECTED)
             return;
 
-        Log.i(TAG, "is decaf? " + isDecaf);
-        Log.i(TAG, "type of coffee? " + type);
-        Log.i(TAG, "assignee: " + assigneeId);
+        Order order = new Order(
+                mUser.getUid(),
+                assigneeId,
+                type, Order.OrderStatus.PENDING.getOrderStatus(),
+                0, "", isDecaf, new Timestamp(System.currentTimeMillis())
+        );
+
+        mFirebaseDatabaseReference.child(ORDERS)
+                .push()
+                .setValue(order, (DatabaseError databaseError, DatabaseReference databaseReference) -> {
+                                SharedPreferences.Editor editor = userSharedPreference.edit();
+                                editor.putBoolean(HAS_OPEN_ORDER, true);
+                                editor.putString(OPEN_ORDER_KEY, databaseReference.getKey());
+                                editor.commit();
+
+                                Log.i(TAG, userSharedPreference.getString(OPEN_ORDER_KEY, "error retrieving key"));
+                            }
+                        );
     }
 
     private RadioGroup insertCoffeeTypesButtons(final RadioGroup radioGroup) {

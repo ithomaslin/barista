@@ -30,6 +30,5 @@ public class CardUpdater extends DefaultViewUpdater {
             imageView.setAlpha(1f);
         }
 
-
     }
 }

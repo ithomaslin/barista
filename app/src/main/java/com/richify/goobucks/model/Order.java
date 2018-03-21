@@ -12,7 +12,18 @@ import java.sql.Timestamp;
 public class Order {
 
     public enum OrderStatus {
-        PENDING, ASSIGNED, DELIVERED
+        PENDING(0), ASSIGNED(1), DELIVERED(2)
+        ;
+
+        private final int orderStatus;
+
+        OrderStatus(int orderStatus) {
+            this.orderStatus = orderStatus;
+        }
+
+        public int getOrderStatus() {
+            return this.orderStatus;
+        }
     }
 
     private String orderId, ownerId, assigneeId, feedback;
@@ -21,14 +32,14 @@ public class Order {
     private Timestamp createdAt;
 
     public Order(String ownerId, String assigneeId,
-                 String feedback, int type, int status,
-                 int rating, Boolean isDecaf, Timestamp createdAt) {
+                 int type, int status, int rating, String feedback,
+                 Boolean isDecaf, Timestamp createdAt) {
         this.ownerId = ownerId;
         this.assigneeId = assigneeId;
-        this.feedback = feedback;
         this.type = type;
         this.status = status;
         this.rating = rating;
+        this.feedback = feedback;
         this.isDecaf = isDecaf;
         this.createdAt = createdAt;
     }
@@ -47,6 +58,10 @@ public class Order {
 
     public String getAssigneeId() {
         return assigneeId;
+    }
+
+    public void setFeedback(String feedback) {
+        this.feedback = feedback;
     }
 
     public String getFeedback() {
